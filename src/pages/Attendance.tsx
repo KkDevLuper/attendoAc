@@ -1,7 +1,9 @@
 import { AppShell } from "@/components/AppShell";
 import { EmptyHint, PageHeader, Ring } from "@/components/AcademicUI";
+import { MarkAttendanceDialog } from "@/components/MarkAttendanceDialog";
 import { Button } from "@/components/ui/button";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useAcademicData } from "@/hooks/use-academic-data";
 import {
   attendanceSimulator,
@@ -10,7 +12,7 @@ import {
   todayStr,
 } from "@/lib/academic";
 import { useMutation } from "convex/react";
-import { Check, Minus, X } from "lucide-react";
+import { CalendarClock, Check, ChevronRight, Minus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -31,6 +33,10 @@ export default function Attendance() {
   const [simAttend, setSimAttend] = useState(10);
   const [simMiss, setSimMiss] = useState(0);
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
+  const [markTarget, setMarkTarget] = useState<{
+    date?: string;
+    subjectId?: Id<"subjects"> | null;
+  } | null>(null);
 
   const overall = data ? overallAttendance(data) : null;
 
@@ -73,6 +79,16 @@ export default function Attendance() {
           overall.pctValue !== null
             ? `${overall.present + overall.leave} of ${overall.total} classes · target 75%`
             : "Record real classes to compute your percentage"
+        }
+        actions={
+          <Button
+            variant="outline"
+            className="h-9 rounded-full px-3 text-[12.5px]"
+            onClick={() => setMarkTarget({ date: undefined, subjectId: null })}
+          >
+            <CalendarClock className="size-4" />
+            Past date
+          </Button>
         }
       />
 
@@ -172,11 +188,21 @@ export default function Attendance() {
                           : "No records yet"}
                       </p>
                     </Link>
-                    {att.pctValue !== null && (
-                      <span className="shrink-0 rounded-md border border-border px-2 py-1 text-[11px] font-medium tnum">
-                        {Math.round(att.pctValue)}%
-                      </span>
-                    )}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        aria-label={`Mark ${s.name} for a past date`}
+                        className="rounded-md border border-border p-1.5 text-muted-foreground active:opacity-60"
+                        onClick={() => setMarkTarget({ date: undefined, subjectId: s._id })}
+                      >
+                        <CalendarClock className="size-3.5" />
+                      </button>
+                      {att.pctValue !== null && (
+                        <span className="rounded-md border border-border px-2 py-1 text-[11px] font-medium tnum">
+                          {Math.round(att.pctValue)}%
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {STATUSES.map((st) => (
@@ -227,7 +253,14 @@ export default function Attendance() {
               const subject = data.subjects.find((s) => s._id === a.subjectId);
               const isPresent = a.status === "present" || a.status === "leave";
               return (
-                <div key={a._id} className="flex items-center gap-3 px-4 py-2.5">
+                <button
+                  key={a._id}
+                  type="button"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left active:bg-muted/50"
+                  onClick={() =>
+                    setMarkTarget({ date: a.date, subjectId: a.subjectId })
+                  }
+                >
                   <span
                     className={`flex size-6 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold ${
                       a.status === "cancelled"
@@ -247,12 +280,25 @@ export default function Attendance() {
                     </p>
                   </div>
                   <span className="text-[12px] capitalize text-muted-foreground">{a.status}</span>
-                </div>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground/50" />
+                </button>
               );
             })}
           </div>
         )}
+        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+          Tap any record to correct or remove it — even for past dates.
+        </p>
       </section>
+
+      <MarkAttendanceDialog
+        open={markTarget !== null}
+        onOpenChange={(v) => !v && setMarkTarget(null)}
+        subjects={subjects}
+        attendance={data.attendance}
+        initialDate={markTarget?.date}
+        initialSubjectId={markTarget?.subjectId ?? null}
+      />
     </AppShell>
   );
 }

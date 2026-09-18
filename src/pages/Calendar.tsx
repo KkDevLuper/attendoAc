@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { EmptyHint, PageHeader } from "@/components/AcademicUI";
+import { MarkAttendanceDialog } from "@/components/MarkAttendanceDialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,7 +20,7 @@ import {
   todayStr,
 } from "@/lib/academic";
 import { useMutation } from "convex/react";
-import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -42,6 +43,7 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [open, setOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [markOpen, setMarkOpen] = useState(false);
 
   const saveEvent = useMutation(api.schedule.saveEvent);
   const deleteEvent = useMutation(api.schedule.deleteEvent);
@@ -154,8 +156,9 @@ export default function CalendarPage() {
               type="button"
               onClick={() => {
                 setSelectedDate(ds);
+                setMarkOpen(true);
               }}
-              className={`relative flex h-10 items-center justify-center rounded-lg border text-[12px] tnum ${heatClass[level]} ${isToday ? "ring-1 ring-foreground" : ""}`}
+              className={`relative flex h-10 items-center justify-center rounded-lg border text-[12px] tnum transition-colors active:opacity-70 ${heatClass[level]} ${isToday ? "ring-1 ring-foreground" : ""}`}
             >
               {parseDate(ds).getDate()}
               {evs.length > 0 && (
@@ -241,8 +244,17 @@ export default function CalendarPage() {
           </div>
         )}
         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-          Tap a day above to view its events here.
+          Tap a day above to mark or correct attendance and view its events.
         </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3 h-10 w-full rounded-xl text-[13px]"
+          onClick={() => setMarkOpen(true)}
+        >
+          <CalendarClock className="size-4" />
+          Mark attendance for {selectedDate}
+        </Button>
       </section>
 
       <EventDialog
@@ -254,6 +266,15 @@ export default function CalendarPage() {
           setOpen(false);
           toast("Event saved");
         }}
+      />
+
+      <MarkAttendanceDialog
+        open={markOpen}
+        onOpenChange={setMarkOpen}
+        subjects={(data.subjects ?? []).filter((s) => !s.archived)}
+        attendance={data.attendance}
+        initialDate={selectedDate}
+        initialSubjectId={null}
       />
     </AppShell>
   );
