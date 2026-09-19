@@ -36,10 +36,21 @@ export const EVENT_TYPE_LABEL: Record<string, string> = {
   exam: "Exam",
   result: "Result",
   college_event: "College event",
+  govt_holiday: "Government holiday",
   festival: "Festival holiday",
   college_holiday: "College holiday",
   personal_leave: "Personal leave",
 };
+
+/** Fixed-date public holidays offered as one-tap presets in the Calendar. */
+export const GOVT_HOLIDAY_PRESETS: { name: string; month: number; day: number }[] = [
+  { name: "New Year's Day", month: 1, day: 1 },
+  { name: "Republic Day", month: 1, day: 26 },
+  { name: "Labour Day", month: 5, day: 1 },
+  { name: "Independence Day", month: 8, day: 15 },
+  { name: "Gandhi Jayanti", month: 10, day: 2 },
+  { name: "Christmas", month: 12, day: 25 },
+];
 
 // ---------- date helpers ----------
 
@@ -412,7 +423,7 @@ export function attendanceHeatmap(data: AllData, monthStart: Date, monthEnd: Dat
     const recs = byDate.get(ds) ?? [];
     if (recs.length === 0) {
       const ev = events.get(ds);
-      if (ev && ["festival", "college_holiday", "personal_leave", "semester_end"].includes(ev.type)) {
+      if (ev && ["govt_holiday", "festival", "college_holiday", "personal_leave", "semester_end"].includes(ev.type)) {
         map.set(ds, "off");
       } else if (d.getDay() === 0) {
         map.set(ds, "off");

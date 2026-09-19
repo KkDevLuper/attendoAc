@@ -145,7 +145,7 @@ export function MarkAttendanceDialog({
                     onClick={() => set(st)}
                     className={`flex h-11 items-center justify-center rounded-lg border text-[13px] font-medium transition-colors active:opacity-70 ${
                       active
-                        ? "border-foreground bg-foreground text-background"
+                        ? "border-primary bg-primary text-primary-foreground"
                         : st === "present"
                           ? "border-foreground/50"
                           : "border-border text-muted-foreground"

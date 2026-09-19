@@ -104,7 +104,7 @@ export default function Timetable() {
               onClick={() => setSelectedDay(d)}
               className={`flex h-14 w-11 shrink-0 flex-col items-center justify-center rounded-xl border text-[11px] ${
                 selectedDay === d
-                  ? "border-foreground bg-foreground text-background"
+                  ? "border-primary bg-primary text-primary-foreground"
                   : "border-border text-muted-foreground"
               }`}
             >

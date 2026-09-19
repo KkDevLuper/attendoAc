@@ -147,7 +147,7 @@ export default function Notifications() {
                   type="button"
                   aria-label={r.read ? "Mark unread" : "Mark read"}
                   onClick={() => markRead({ id: r._id, read: !r.read })}
-                  className={`mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-full border ${r.read ? "border-border text-muted-foreground" : "border-foreground bg-foreground text-background"}`}
+                  className={`mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-full border ${r.read ? "border-border text-muted-foreground" : "border-primary bg-primary text-primary-foreground"}`}
                   style={{ width: 18, height: 18 }}
                 >
                   {r.read ? <BellOff className="size-2.5" /> : <Check className="size-2.5" />}

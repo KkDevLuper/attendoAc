@@ -71,7 +71,7 @@ export function Ring({
               strokeWidth={stroke}
               strokeLinecap="round"
               className={cn(
-                "stroke-foreground transition-[stroke-dashoffset] duration-500",
+                "stroke-primary transition-[stroke-dashoffset] duration-500",
                 tone === "muted" && "stroke-muted-foreground/60",
               )}
               strokeDasharray={c}
@@ -101,7 +101,7 @@ export function MiniBar({ value, className }: { value: number | null; className?
   return (
     <div className={cn("h-1 w-full overflow-hidden rounded-full bg-border/60", className)}>
       <div
-        className={cn("h-full rounded-full bg-foreground transition-all duration-500", !has && "opacity-0")}
+        className={cn("h-full rounded-full bg-primary transition-all duration-500", !has && "opacity-0")}
         style={{ width: `${w}%` }}
       />
     </div>
@@ -139,7 +139,7 @@ export function ScoreBadge({
   const tone = !has
     ? "text-muted-foreground border-border"
     : value >= 75
-      ? "text-foreground border-foreground/40 bg-foreground/[0.04]"
+      ? "text-primary border-primary/40 bg-primary/[0.06]"
       : value >= 50
         ? "text-foreground/80 border-border"
         : "text-foreground border-foreground/25";

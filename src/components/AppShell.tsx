@@ -67,8 +67,8 @@ export function AppShell({
     to === "/more" ? location.pathname === "/more" : location.pathname.startsWith(to);
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col bg-background">
-      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/95 px-4 pb-3 pt-4 backdrop-blur">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
+      <header className="glass-strong sticky top-0 z-20 rounded-b-3xl border-b border-border/60 px-4 pb-3 pt-4">
         <div className="flex items-center justify-between">
           <h1 className="truncate text-[17px] font-semibold tracking-tight">{title}</h1>
           <div className="flex items-center gap-1">
@@ -107,18 +107,18 @@ export function AppShell({
         type="button"
         onClick={() => setQuickOpen((v) => !v)}
         aria-label="Quick add"
-        className="fixed bottom-24 right-[max(1rem,calc(50%-13.5rem))] z-30 flex size-12 items-center justify-center rounded-full border border-border bg-foreground text-background shadow-lg transition-transform active:scale-95"
+        className="fixed bottom-24 right-[max(1rem,calc(50%-13.5rem))] z-30 flex size-12 items-center justify-center rounded-full border border-primary/30 bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-transform active:scale-95"
       >
         <Plus className={quickOpen ? "rotate-45 transition-transform" : "transition-transform"} />
       </button>
 
       {quickOpen && (
         <div
-          className="fixed inset-0 z-40 bg-background/60 backdrop-blur-[2px]"
+          className="fixed inset-0 z-40 bg-background/50 backdrop-blur-sm"
           onClick={() => setQuickOpen(false)}
         >
           <div
-            className="absolute bottom-20 left-1/2 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-2xl border border-border bg-card p-2 shadow-xl"
+            className="glass-strong absolute bottom-20 left-1/2 w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 rounded-3xl border border-border p-2"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="px-3 pb-1 pt-2 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
@@ -143,7 +143,7 @@ export function AppShell({
       )}
 
       {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-1/2 z-30 w-full max-w-md -translate-x-1/2 border-t border-border/70 bg-background/95 backdrop-blur">
+      <nav className="glass-strong fixed bottom-0 left-1/2 z-30 w-full max-w-md -translate-x-1/2 rounded-t-3xl border-t border-border/60">
         <div className="grid grid-cols-5 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5">
           {NAV_ITEMS.map((item) => {
             const active = isActive(item.to);
@@ -155,10 +155,16 @@ export function AppShell({
                   active ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
-                <item.icon className="size-[20px]" strokeWidth={active ? 2 : 1.5} />
-                {item.label}
                 <span
-                  className={`h-0.5 w-4 rounded-full ${active ? "bg-foreground" : "bg-transparent"}`}
+                  className={`flex flex-col items-center gap-1 rounded-xl px-2.5 py-0.5 ${
+                    active ? "bg-primary/10" : ""
+                  }`}
+                >
+                  <item.icon className={`size-[20px] ${active ? "text-primary" : ""}`} strokeWidth={active ? 2 : 1.5} />
+                  {item.label}
+                </span>
+                <span
+                  className={`h-0.5 w-4 rounded-full ${active ? "bg-primary" : "bg-transparent"}`}
                 />
               </Link>
             );

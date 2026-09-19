@@ -173,7 +173,7 @@ export default function Study() {
                             aria-label={g.done ? "Reopen" : "Complete"}
                             onClick={() => toggleGoal({ id: g._id, done: !g.done })}
                             className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${
-                              g.done ? "border-foreground bg-foreground text-background" : "border-border"
+                              g.done ? "border-primary bg-primary text-primary-foreground" : "border-border"
                             }`}
                           >
                             {g.done && <Check className="size-3" />}

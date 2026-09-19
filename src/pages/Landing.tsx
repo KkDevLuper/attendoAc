@@ -22,7 +22,7 @@ export default function Landing() {
     >
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6">
         <header className="flex items-center justify-between py-6">
-          <span className="text-[13px] font-semibold uppercase tracking-[0.18em]">Scholar</span>
+          <span className="text-[13px] font-semibold uppercase tracking-[0.18em] text-primary">Scholar</span>
           <Link
             to={isAuthenticated ? "/dashboard" : "/auth"}
             className="text-[13px] text-muted-foreground transition-colors hover:text-foreground"
@@ -99,7 +99,7 @@ export default function Landing() {
             ))}
           </div>
 
-          <div className="mt-12 rounded-xl border border-border bg-card p-5">
+          <div className="glass mt-12 rounded-2xl border border-border p-5">
             <p className="text-[13px] leading-relaxed text-muted-foreground">
               “Open the app at the end of the day and know your entire academic situation
               within a few minutes.”

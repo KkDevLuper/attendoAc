@@ -138,7 +138,7 @@ export default function SubjectDetail() {
               onClick={() => setTab(t.key)}
               className={`whitespace-nowrap rounded-full border px-3.5 py-1.5 text-[12.5px] font-medium transition-colors ${
                 tab === t.key
-                  ? "border-foreground bg-foreground text-background"
+                  ? "border-primary bg-primary text-primary-foreground"
                   : "border-border text-muted-foreground"
               }`}
             >
@@ -387,7 +387,7 @@ function SyllabusTab({ subject }: { subject: Doc<"subjects"> }) {
                   updateChapter({ id: ch._id, status: ch.status === "done" ? "pending" : "done" })
                 }
                 className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${
-                  ch.status === "done" ? "border-foreground bg-foreground text-background" : "border-border"
+                  ch.status === "done" ? "border-primary bg-primary text-primary-foreground" : "border-border"
                 }`}
               >
                 {ch.status === "done" && <Check className="size-3" />}
@@ -425,7 +425,7 @@ function SyllabusTab({ subject }: { subject: Doc<"subjects"> }) {
                       updateTopic({ id: t._id, status: t.status === "done" ? "pending" : "done" })
                     }
                     className={`flex size-4 shrink-0 items-center justify-center rounded-full border ${
-                      t.status === "done" ? "border-foreground bg-foreground text-background" : "border-border"
+                      t.status === "done" ? "border-primary bg-primary text-primary-foreground" : "border-border"
                     }`}
                   >
                     {t.status === "done" && <Check className="size-2.5" />}

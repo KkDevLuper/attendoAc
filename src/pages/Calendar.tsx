@@ -16,25 +16,28 @@ import {
   attendanceHeatmap,
   computeStreaks,
   EVENT_TYPE_LABEL,
+  GOVT_HOLIDAY_PRESETS,
   parseDate,
   todayStr,
 } from "@/lib/academic";
 import { useMutation } from "convex/react";
-import { CalendarClock, ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { CalendarClock, Check, ChevronLeft, ChevronRight, PartyPopper, Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 const EVENT_TYPES = Object.keys(EVENT_TYPE_LABEL);
 
 const EVENT_DOTS: Record<string, string> = {
-  exam: "border-foreground bg-foreground",
-  semester_start: "border-foreground/50",
-  result: "border-foreground/50",
-  college_event: "border-muted-foreground",
-  festival: "border-border",
-  college_holiday: "border-border",
+  exam: "border-destructive bg-destructive",
+  semester_start: "border-primary/60",
+  result: "border-primary/60",
+  college_event: "border-sky-400",
+  govt_holiday: "border-amber-400 bg-amber-400",
+  festival: "border-fuchsia-400 bg-fuchsia-400",
+  college_holiday: "border-amber-400/70",
   personal_leave: "border-muted-foreground/60",
-  semester_end: "border-border",
+  semester_end: "border-muted-foreground/40",
 };
 
 export default function CalendarPage() {
@@ -42,11 +45,13 @@ export default function CalendarPage() {
   const now = new Date();
   const [month, setMonth] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [open, setOpen] = useState(false);
+  const [holidayOpen, setHolidayOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [markOpen, setMarkOpen] = useState(false);
 
   const saveEvent = useMutation(api.schedule.saveEvent);
   const deleteEvent = useMutation(api.schedule.deleteEvent);
+  const markAttendance = useMutation(api.schedule.markAttendance);
 
   const monthStart = month;
   const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0);
@@ -106,9 +111,9 @@ export default function CalendarPage() {
   }
 
   const heatClass: Record<string, string> = {
-    high: "bg-foreground text-background border-foreground",
-    medium: "bg-foreground/60 text-background border-foreground/60",
-    low: "bg-foreground/20 text-foreground border-foreground/20",
+    high: "bg-primary text-primary-foreground border-primary",
+    medium: "bg-primary/60 text-primary-foreground border-primary/60",
+    low: "bg-primary/20 text-primary border-primary/20",
     none: "bg-muted text-muted-foreground border-border",
     off: "bg-transparent text-muted-foreground/50 border-border/40",
   };
@@ -117,9 +122,23 @@ export default function CalendarPage() {
     <AppShell
       title="Calendar"
       actions={
-        <Button variant="ghost" size="icon" className="size-9 rounded-full" aria-label="Add event" onClick={() => { setSelectedDate(todayStr()); setOpen(true); }}>
-          <Plus className="size-[18px]" strokeWidth={1.75} />
-        </Button>
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 rounded-full"
+            aria-label="Mark government holiday or festival"
+            onClick={() => {
+              setSelectedDate(todayStr());
+              setHolidayOpen(true);
+            }}
+          >
+            <PartyPopper className="size-[18px]" strokeWidth={1.75} />
+          </Button>
+          <Button variant="ghost" size="icon" className="size-9 rounded-full" aria-label="Add event" onClick={() => { setSelectedDate(todayStr()); setOpen(true); }}>
+            <Plus className="size-[18px]" strokeWidth={1.75} />
+          </Button>
+        </>
       }
     >
       <PageHeader
@@ -171,9 +190,9 @@ export default function CalendarPage() {
 
       {/* Legend */}
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10.5px] text-muted-foreground">
-        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-foreground bg-foreground" /> high</span>
-        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-foreground/60 bg-foreground/60" /> medium</span>
-        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-foreground/20 bg-foreground/20" /> low</span>
+        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-primary bg-primary" /> high</span>
+        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-primary/60 bg-primary/60" /> medium</span>
+        <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-primary/20 bg-primary/20" /> low</span>
         <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-border bg-muted" /> none</span>
         <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm border border-border/40" /> off</span>
       </div>
@@ -255,6 +274,15 @@ export default function CalendarPage() {
           <CalendarClock className="size-4" />
           Mark attendance for {selectedDate}
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-2 h-10 w-full rounded-xl text-[13px]"
+          onClick={() => setHolidayOpen(true)}
+        >
+          <PartyPopper className="size-4" />
+          Mark holiday / festival for {selectedDate}
+        </Button>
       </section>
 
       <EventDialog
@@ -266,6 +294,16 @@ export default function CalendarPage() {
           setOpen(false);
           toast("Event saved");
         }}
+      />
+
+      <HolidayDialog
+        open={holidayOpen}
+        onOpenChange={setHolidayOpen}
+        date={selectedDate}
+        slots={data.slots ?? []}
+        attendance={data.attendance}
+        saveEvent={saveEvent}
+        markAttendance={markAttendance}
       />
 
       <MarkAttendanceDialog
@@ -352,6 +390,169 @@ function EventDialog({
           </div>
           <Button type="submit" className="h-11 w-full rounded-xl">Save event</Button>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function HolidayDialog({
+  open,
+  onOpenChange,
+  date,
+  slots,
+  attendance,
+  saveEvent,
+  markAttendance,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  date: string;
+  slots: Doc<"timetableSlots">[];
+  attendance: Doc<"attendance">[];
+  saveEvent: (v: { title: string; date: string; type: string; notes?: string }) => Promise<unknown>;
+  markAttendance: (v: { subjectId: Id<"subjects">; date: string; status: string }) => Promise<unknown>;
+}) {
+  const [type, setType] = useState("govt_holiday");
+  const [title, setTitle] = useState("");
+  const [holidayDate, setHolidayDate] = useState(date);
+  const [cancelClasses, setCancelClasses] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setType("govt_holiday");
+      setTitle("");
+      setHolidayDate(date);
+      setCancelClasses(true);
+    }
+  }, [open, date]);
+
+  const weekday = parseDate(holidayDate).getDay();
+  const scheduledCount = new Set(
+    slots.filter((s) => !s.deletedAt && s.day === weekday).map((s) => s.subjectId),
+  ).size;
+  const recordedCount = attendance.filter((a) => !a.deletedAt && a.date === holidayDate).length;
+
+  const nextOccurrence = (month: number, day: number) => {
+    const now = new Date();
+    let d = new Date(now.getFullYear(), month - 1, day);
+    if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) {
+      d = new Date(now.getFullYear() + 1, month - 1, day);
+    }
+    return todayStr(d);
+  };
+
+  const save = async () => {
+    if (!title.trim()) {
+      toast.error("Give the holiday a name");
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveEvent({ title: title.trim(), date: holidayDate, type });
+      let cancelled = 0;
+      if (cancelClasses) {
+        const subjectIds = new Set(
+          slots
+            .filter((s) => !s.deletedAt && s.day === parseDate(holidayDate).getDay())
+            .map((s) => s.subjectId),
+        );
+        for (const subjectId of subjectIds) {
+          await markAttendance({ subjectId, date: holidayDate, status: "cancelled" });
+          cancelled += 1;
+        }
+      }
+      onOpenChange(false);
+      toast(
+        cancelled > 0
+          ? `Holiday saved · ${cancelled} ${cancelled === 1 ? "class" : "classes"} cancelled`
+          : "Holiday saved",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-[16px]">Mark a holiday or festival</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3.5 pb-2">
+          <div className="flex flex-wrap gap-1.5">
+            {GOVT_HOLIDAY_PRESETS.map((p) => (
+              <button
+                key={p.name}
+                type="button"
+                className="rounded-full border border-border bg-card px-3 py-1.5 text-[12px] active:opacity-60"
+                onClick={() => {
+                  setTitle(p.name);
+                  setType("govt_holiday");
+                  setHolidayDate(nextOccurrence(p.month, p.day));
+                }}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[12px] text-muted-foreground">Name *</Label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Diwali / Independence Day"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[12px] text-muted-foreground">Date</Label>
+              <Input value={holidayDate} onChange={(e) => setHolidayDate(e.target.value)} type="date" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[12px] text-muted-foreground">Type</Label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-[14px]"
+              >
+                <option value="govt_holiday">Government holiday</option>
+                <option value="festival">Festival holiday</option>
+                <option value="college_holiday">College holiday</option>
+              </select>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCancelClasses((v) => !v)}
+            className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-3.5 py-3 text-left active:opacity-70"
+          >
+            <span
+              className={`flex size-5 items-center justify-center rounded-md border ${
+                cancelClasses ? "border-primary bg-primary text-primary-foreground" : "border-border bg-transparent"
+              }`}
+            >
+              {cancelClasses && <Check className="size-3.5" strokeWidth={3} />}
+            </span>
+            <span className="flex-1">
+              <span className="block text-[13.5px] font-medium">Cancel scheduled classes</span>
+              <span className="block text-[11.5px] text-muted-foreground">
+                {scheduledCount > 0
+                  ? `Marks ${scheduledCount} subject${scheduledCount === 1 ? "" : "s"} as cancelled on this date`
+                  : "No classes scheduled on this weekday"}
+              </span>
+            </span>
+          </button>
+          {recordedCount > 0 && (
+            <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+              {recordedCount} attendance {recordedCount === 1 ? "record" : "records"} already exist for this
+              date — cancelling will overwrite them (kept in your history).
+            </p>
+          )}
+          <Button type="button" disabled={saving} onClick={save} className="h-11 w-full rounded-xl">
+            {saving ? "Saving…" : "Save holiday"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
