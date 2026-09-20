@@ -15,7 +15,7 @@ import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-const STATUSES = ["present", "absent", "leave", "cancelled"] as const;
+const STATUSES = ["present", "absent", "leave", "cancelled", "holiday"] as const;
 type StatusKey = (typeof STATUSES)[number];
 
 const STATUS_META: Record<StatusKey, { short: string; full: string }> = {
@@ -23,6 +23,7 @@ const STATUS_META: Record<StatusKey, { short: string; full: string }> = {
   absent: { short: "A", full: "Absent" },
   leave: { short: "L", full: "Leave" },
   cancelled: { short: "C", full: "Cancelled" },
+  holiday: { short: "H", full: "Holiday" },
 };
 
 /**
@@ -134,7 +135,7 @@ export function MarkAttendanceDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-5 gap-1.5">
               {STATUSES.map((st) => {
                 const active = existing?.status === st;
                 return (

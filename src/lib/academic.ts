@@ -128,14 +128,19 @@ export function buildSchedule(data: AllData): DaySchedule[] {
 export function daySchedule(data: AllData, date: string): SlotView[] {
   const d = parseDate(date).getDay();
   const day = buildSchedule(data).find((x) => x.day === d);
-  // If a class was cancelled on this date, drop it from "scheduled" view
-  const cancelled = new Set(
+  // If a class was cancelled or fell on a holiday, drop it from "scheduled" view
+  const dropped = new Set(
     data.attendance
-      .filter((a) => !a.deletedAt && a.date === date && a.status === "cancelled")
+      .filter(
+        (a) =>
+          !a.deletedAt &&
+          a.date === date &&
+          (a.status === "cancelled" || a.status === "holiday"),
+      )
       .map((a) => `${a.subjectId}|${a.slotId ?? ""}`),
   );
   return (day?.slots ?? []).filter(
-    (s) => !cancelled.has(`${s.subjectId}|${s._id}`) && !cancelled.has(`${s.subjectId}|`),
+    (s) => !dropped.has(`${s.subjectId}|${s._id}`) && !dropped.has(`${s.subjectId}|`),
   );
 }
 
@@ -147,14 +152,14 @@ export function nextClassInfo(data: AllData, now = new Date()) {
     d.setDate(now.getDate() + offset);
     const dateStr = todayStr(d);
     const slots = sched[d.getDay()].slots.filter((s) => {
-      const cancelled = data.attendance.some(
+      const notHeld = data.attendance.some(
         (a) =>
           !a.deletedAt &&
           a.date === dateStr &&
-          a.status === "cancelled" &&
+          (a.status === "cancelled" || a.status === "holiday") &&
           (a.slotId ? a.slotId === s._id : true),
       );
-      return !cancelled;
+      return !notHeld;
     });
     const [eh, em] = (slots[slots.length - 1]?.endTime ?? "00:00").split(":").map(Number);
     if (offset === 0 && slots.length) {
@@ -191,6 +196,7 @@ export interface SubjectAttendance {
   absent: number;
   leave: number;
   cancelled: number;
+  holiday: number;
   pctValue: number | null; // null = not enough data
   safeBunks: number; // classes can still miss while >= 75%
   needToAttend: number; // classes to attend consecutively to reach 75%
@@ -204,7 +210,8 @@ export function computeSubjectAttendance(
   const absent = live.filter((r) => r.status === "absent").length;
   const leave = live.filter((r) => r.status === "leave").length;
   const cancelled = live.filter((r) => r.status === "cancelled").length;
-  const total = present + absent + leave; // conducted & attended-relevant
+  const holiday = live.filter((r) => r.status === "holiday").length;
+  const total = present + absent + leave; // conducted & attended-relevant (holiday/cancelled not conducted)
   const pctValue = total > 0 ? ((present + leave) / total) * 100 : null;
   const safeBunks = pctValue === null ? 0 : Math.max(0, Math.floor((present + leave) / 0.75) - total);
   // x solves (present + x) / (total + x) = 0.75  →  x = (0.75·total − present) / 0.25
@@ -212,7 +219,7 @@ export function computeSubjectAttendance(
     pctValue === null || pctValue >= 75
       ? 0
       : Math.ceil((0.75 * total - (present + leave)) / 0.25);
-  return { total, present, absent, leave, cancelled, pctValue, safeBunks, needToAttend };
+  return { total, present, absent, leave, cancelled, holiday, pctValue, safeBunks, needToAttend };
 }
 
 export function overallAttendance(data: AllData): SubjectAttendance {
@@ -433,8 +440,15 @@ export function attendanceHeatmap(data: AllData, monthStart: Date, monthEnd: Dat
       continue;
     }
     const present = recs.filter((r) => r.status === "present" || r.status === "leave").length;
-    const relevant = recs.filter((r) => r.status !== "cancelled").length;
-    const ratio = relevant ? present / relevant : 1;
+    const relevant = recs.filter(
+      (r) => r.status !== "cancelled" && r.status !== "holiday",
+    ).length;
+    if (relevant === 0) {
+      // Only holiday/cancelled records that day — treat as a day off
+      map.set(ds, "off");
+      continue;
+    }
+    const ratio = present / relevant;
     map.set(ds, ratio >= 0.9 ? "high" : ratio >= 0.5 ? "medium" : "low");
   }
   return map;

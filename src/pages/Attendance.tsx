@@ -17,7 +17,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-const STATUSES = ["present", "absent", "leave", "cancelled"] as const;
+const STATUSES = ["present", "absent", "leave", "cancelled", "holiday"] as const;
 type StatusKey = (typeof STATUSES)[number];
 
 const STATUS_LABEL: Record<StatusKey, string> = {
@@ -25,6 +25,7 @@ const STATUS_LABEL: Record<StatusKey, string> = {
   absent: "A",
   leave: "L",
   cancelled: "C",
+  holiday: "H",
 };
 
 export default function Attendance() {
@@ -204,7 +205,7 @@ export default function Attendance() {
                       )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <div className="grid grid-cols-5 gap-1.5">
                     {STATUSES.map((st) => (
                       <button
                         key={st}
@@ -263,14 +264,20 @@ export default function Attendance() {
                 >
                   <span
                     className={`flex size-6 shrink-0 items-center justify-center rounded-md border text-[11px] font-semibold ${
-                      a.status === "cancelled"
+                      a.status === "cancelled" || a.status === "holiday"
                         ? "border-border text-muted-foreground"
                         : isPresent
                           ? "border-foreground/50 text-foreground"
                           : "border-border text-muted-foreground line-through"
                     }`}
                   >
-                    {isPresent ? <Check className="size-3.5" /> : a.status === "cancelled" ? <Minus className="size-3.5" /> : <X className="size-3.5" />}
+                    {isPresent ? (
+                      <Check className="size-3.5" />
+                    ) : a.status === "cancelled" || a.status === "holiday" ? (
+                      <Minus className="size-3.5" />
+                    ) : (
+                      <X className="size-3.5" />
+                    )}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13.5px] font-medium">{subject?.name ?? "Subject"}</p>

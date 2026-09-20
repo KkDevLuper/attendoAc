@@ -541,6 +541,7 @@ function AttendanceTab({
     { key: "absent", label: "Absent" },
     { key: "leave", label: "Leave" },
     { key: "cancelled", label: "Cancelled" },
+    { key: "holiday", label: "Holiday" },
   ];
 
   return (
@@ -549,7 +550,7 @@ function AttendanceTab({
         <p className="mb-2 text-[10.5px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
           Mark attendance
         </p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-2">
           {STATUS.map((s) => (
             <Button
               key={s.key}
@@ -587,6 +588,10 @@ function AttendanceTab({
         <div className="flex items-baseline justify-between border-t border-border/60 py-1">
           <span className="text-[13px] text-muted-foreground">Cancelled</span>
           <span className="text-[13px] font-medium tnum">{att.cancelled}</span>
+        </div>
+        <div className="flex items-baseline justify-between border-t border-border/60 py-1">
+          <span className="text-[13px] text-muted-foreground">Holiday</span>
+          <span className="text-[13px] font-medium tnum">{att.holiday}</span>
         </div>
         <div className="flex items-baseline justify-between border-t border-border/60 py-1">
           <span className="text-[13px] text-muted-foreground">Percentage</span>

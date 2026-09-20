@@ -81,15 +81,18 @@ export default function CalendarPage() {
       const d = parseDate(a.date);
       return d >= monthStart && d <= monthEnd;
     });
-    const conducted = inMonth.filter((a) => a.status !== "cancelled").length;
+    const conducted = inMonth.filter(
+      (a) => a.status !== "cancelled" && a.status !== "holiday",
+    ).length;
     const present = inMonth.filter((a) => a.status === "present" || a.status === "leave").length;
     const absent = inMonth.filter((a) => a.status === "absent").length;
     const cancelled = inMonth.filter((a) => a.status === "cancelled").length;
+    const holiday = inMonth.filter((a) => a.status === "holiday").length;
     const eventDays = [...eventsByDate.keys()].filter((d) => {
       const dd = parseDate(d);
       return dd >= monthStart && dd <= monthEnd;
     }).length;
-    return { conducted, present, absent, cancelled, eventDays };
+    return { conducted, present, absent, cancelled, holiday, eventDays };
   }, [data, monthStart, monthEnd, eventsByDate]);
 
   if (!data || !heat || !monthStats || !streaks) {
@@ -222,6 +225,7 @@ export default function CalendarPage() {
         <Row label="Present (incl. leave)" value={monthStats.present} />
         <Row label="Absent" value={monthStats.absent} />
         <Row label="Cancelled" value={monthStats.cancelled} />
+        <Row label="Holiday" value={monthStats.holiday} />
         <Row label="Event days" value={monthStats.eventDays} />
       </section>
 
