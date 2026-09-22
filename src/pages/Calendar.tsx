@@ -18,6 +18,7 @@ import {
   EVENT_TYPE_LABEL,
   GOVT_HOLIDAY_PRESETS,
   parseDate,
+  semesterCountdown,
   todayStr,
 } from "@/lib/academic";
 import { useMutation } from "convex/react";
@@ -73,6 +74,10 @@ export default function CalendarPage() {
   }, [data]);
 
   const streaks = data ? computeStreaks(data) : null;
+  const countdown = useMemo(
+    () => (data ? semesterCountdown(data, now) : null),
+    [data],
+  );
 
   const monthStats = useMemo(() => {
     if (!data) return null;
@@ -95,7 +100,7 @@ export default function CalendarPage() {
     return { conducted, present, absent, cancelled, holiday, eventDays };
   }, [data, monthStart, monthEnd, eventsByDate]);
 
-  if (!data || !heat || !monthStats || !streaks) {
+  if (!data || !heat || !monthStats || !streaks || !countdown) {
     return (
       <AppShell title="Calendar">
         <div className="space-y-3 pt-2">
@@ -227,6 +232,12 @@ export default function CalendarPage() {
         <Row label="Cancelled" value={monthStats.cancelled} />
         <Row label="Holiday" value={monthStats.holiday} />
         <Row label="Event days" value={monthStats.eventDays} />
+        {countdown.totalDays !== null && (
+          <Row
+            label={`Days to go · ${countdown.endLabel ?? "semester end"}`}
+            value={countdown.classDays ?? countdown.totalDays}
+          />
+        )}
       </section>
 
       {/* Events for selected date */}

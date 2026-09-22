@@ -13,6 +13,7 @@ import {
   daySchedule,
   nextClassInfo,
   overallAttendance,
+  semesterCountdown,
   to12h,
   todayStr,
   totalStudyMinutes,
@@ -24,6 +25,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Bell,
+  CalendarDays,
   CheckCircle2,
   Clock,
   Flame,
@@ -53,6 +55,7 @@ export default function Dashboard() {
     const next = nextClassInfo(data, now);
     const streaks = computeStreaks(data);
     const alerts = computeAlerts(data, now);
+    const countdown = semesterCountdown(data, now);
     const sessionsToday = data.sessions.filter((s) => !s.deletedAt && s.date === today);
     const studyToday = sessionsToday.reduce((a, s) => a + s.durationMin, 0);
     const studyTotal = totalStudyMinutes(data);
@@ -63,7 +66,7 @@ export default function Dashboard() {
       .filter((e) => e.days >= 0 && e.days <= 30)
       .sort((a, b) => a.days - b.days);
     return {
-      overall, syllPct, gpa, todaySlots, next, streaks, alerts,
+      overall, syllPct, gpa, todaySlots, next, streaks, alerts, countdown,
       studyToday, studyTotal, goalsToday, exams,
       pendingTopics: allTopics.filter((t) => t.status === "pending").length,
     };
@@ -148,6 +151,55 @@ export default function Dashboard() {
               {to12h(s.next.slot.startTime)}
             </span>
             <span className="text-[13px] font-medium">{s.next.slot.subjectName}</span>
+          </Link>
+        )}
+      </section>
+
+      {/* School days countdown */}
+      <section className="mt-7">
+        <SectionLabel>Semester countdown</SectionLabel>
+        {s.countdown.totalDays === null ? (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <p className="text-[13.5px] font-medium">Days of school to go</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+              Add a{" "}
+              <Link to="/calendar" className="underline underline-offset-2">
+                semester end date
+              </Link>{" "}
+              (or set end dates on your subjects) and your countdown appears here.
+            </p>
+          </div>
+        ) : (
+          <Link
+            to="/calendar"
+            className="block rounded-xl border border-border bg-card p-4 active:opacity-80"
+          >
+            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+              <CalendarDays className="size-3.5" /> {s.countdown.endLabel ?? "Semester end"} ·{" "}
+              {new Date(s.countdown.endDate! + "T00:00:00").toLocaleDateString("en-US", {
+                day: "numeric",
+                month: "short",
+              })}
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <p className="text-[28px] font-semibold leading-none tnum">
+                {s.countdown.totalDays}
+              </p>
+              <p className="text-[13px] text-muted-foreground">
+                {s.countdown.totalDays === 1 ? "day" : "days"} of school to go
+              </p>
+            </div>
+            <div className="mt-2 flex items-center gap-4 text-[12px] text-muted-foreground">
+              <span className="tnum">
+                {s.countdown.classDays} class days
+              </span>
+              {s.countdown.progressPct !== null && (
+                <span className="tnum">{s.countdown.progressPct}% elapsed</span>
+              )}
+            </div>
+            {s.countdown.progressPct !== null && (
+              <MiniBar value={s.countdown.progressPct} className="mt-2.5" />
+            )}
           </Link>
         )}
       </section>

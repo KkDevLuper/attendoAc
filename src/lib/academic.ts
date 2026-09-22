@@ -416,6 +416,136 @@ export function computeScores(
 
 export type HeatLevel = "none" | "high" | "medium" | "low" | "off";
 
+// ---------- semester countdown ----------
+
+export interface SemesterCountdown {
+  /** Calendar days until semester end (or null — no end date set). */
+  totalDays: number | null;
+  /** Working class days left (excludes Sundays and marked holidays). */
+  classDays: number | null;
+  /** Days from semester start to end; null when not fully configured. */
+  totalSemesterDays: number | null;
+  /** Elapsed days within the semester; null when not fully configured. */
+  elapsedDays: number | null;
+  /** 0–100 progress through the semester; null when not fully configured. */
+  progressPct: number | null;
+  endDate: string | null;
+  startDate: string | null;
+  /** Human label for the end event, e.g. "Semester end". */
+  endLabel: string | null;
+  /** True when the end date has passed. */
+  over: boolean;
+}
+
+const OFF_DAY_EVENT_TYPES = new Set([
+  "govt_holiday",
+  "festival",
+  "college_holiday",
+  "personal_leave",
+  "semester_end",
+  "exam",
+]);
+
+/**
+ * How many days of school are left: finds the next upcoming semester-end
+ * (calendar event, else the latest subject endDate), then counts calendar
+ * days and working class days (skipping Sundays and holidays) between
+ * today and that end. Returns nulls when the semester end isn't set —
+ * never a made-up number.
+ */
+export function semesterCountdown(data: AllData, now = new Date()): SemesterCountdown {
+  const today = todayStr(now);
+
+  // End: nearest upcoming semester_end event, else latest upcoming subject endDate.
+  let endDate: string | null = null;
+  let endLabel: string | null = null;
+  const endEvents = data.events
+    .filter((e) => !e.deletedAt && (e.type === "semester_end" || e.type === "result"))
+    .filter((e) => daysBetween(today, e.date) >= 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (endEvents.length > 0) {
+    endDate = endEvents[0].date;
+    endLabel = endEvents[0].title || EVENT_TYPE_LABEL[endEvents[0].type] ?? "Semester end";
+  } else {
+    const subjectEnds = data.subjects
+      .filter((s) => !s.archived && s.endDate)
+      .map((s) => s.endDate!)
+      .filter((d) => daysBetween(today, d) >= 0)
+      .sort();
+    if (subjectEnds.length > 0) {
+      endDate = subjectEnds[subjectEnds.length - 1];
+      endLabel = "Last class";
+    }
+  }
+
+  // Start: semester_start event before today, else earliest subject startDate.
+  let startDate: string | null = null;
+  const startEvents = data.events
+    .filter((e) => !e.deletedAt && e.type === "semester_start")
+    .filter((e) => endDate === null || e.date <= endDate)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (startEvents.length > 0) {
+    startDate = startEvents[0].date;
+  } else {
+    const subjectStarts = data.subjects
+      .filter((s) => !s.archived && s.startDate)
+      .map((s) => s.startDate!)
+      .sort();
+    if (subjectStarts.length > 0) startDate = subjectStarts[0];
+  }
+
+  if (endDate === null) {
+    return {
+      totalDays: null,
+      classDays: null,
+      totalSemesterDays: null,
+      elapsedDays: null,
+      progressPct: null,
+      endDate: null,
+      startDate: null,
+      endLabel: null,
+      over: false,
+    };
+  }
+
+  const left = daysBetween(today, endDate);
+  const over = left < 0;
+
+  // Count working class days from today (exclusive) to end (inclusive).
+  const holidayDates = new Set(
+    data.events
+      .filter((e) => !e.deletedAt && OFF_DAY_EVENT_TYPES.has(e.type))
+      .map((e) => e.date),
+  );
+  let classDays = 0;
+  for (let i = 1; i <= left; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    if (d.getDay() === 0 || holidayDates.has(todayStr(d))) continue;
+    classDays++; // working day
+  }
+
+  const totalSemesterDays = startDate ? daysBetween(startDate, endDate) : null;
+  const elapsedDays =
+    startDate && daysBetween(startDate, today) >= 0 ? daysBetween(startDate, today) : null;
+  const progressPct =
+    totalSemesterDays !== null && elapsedDays !== null && totalSemesterDays > 0
+      ? Math.min(100, Math.round((elapsedDays / totalSemesterDays) * 100))
+      : null;
+
+  return {
+    totalDays: Math.max(0, left),
+    classDays,
+    totalSemesterDays,
+    elapsedDays,
+    progressPct,
+    endDate,
+    startDate,
+    endLabel,
+    over: false,
+  };
+}
+
 export function attendanceHeatmap(data: AllData, monthStart: Date, monthEnd: Date) {
   const map = new Map<string, HeatLevel>();
   const byDate = new Map<string, Doc<"attendance">[]>();
@@ -597,5 +727,23 @@ export function computeAlerts(data: AllData, now = new Date()): Alert[] {
       body: "Start a revision to lock it in",
     });
   }
+  // Semester countdown alert — how many days of school are left.
+  const cd = semesterCountdown(data, now);
+  if (cd.totalDays !== null && !cd.over) {
+    if (cd.totalDays <= 7) {
+      alerts.push({
+        kind: "info",
+        title: `${cd.endLabel ?? "Semester end"} in ${cd.totalDays} day${cd.totalDays === 1 ? "" : "s"}`,
+        body: `${cd.classDays} class days left — wrap up pending topics and revisions`,
+      });
+    } else if (cd.totalDays <= 21) {
+      alerts.push({
+        kind: "info",
+        title: `${cd.totalDays} days of school to go`,
+        body: `${cd.classDays} class days left until ${cd.endLabel ?? "semester end"}`,
+      });
+    }
+  }
+
   return alerts.slice(0, 6);
 }
